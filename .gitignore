@@ -1,0 +1,32 @@
+# Local data, checkpoints, and outputs
+/data/
+/pretrain/
+/checkpoints/
+/outputs/
+/work_dirs/
+/runs/
+/wandb/
+/external/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Python and compiled extensions
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+/build/
+/dist/
+.venv/
+venv/
+
+# Credentials and local settings
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.DS_Store
+*.log
