@@ -1,0 +1,13 @@
+# Canonical occupancy reader (datasets.canonical.CanonicalOccDataset).
+# Frames are read from <path>/<type>/<scene>/<frame>.npz.
+
+type: panobench_kitti360
+path: data/canonical_occ
+
+mappings: 'datasets/mappings/panobench_kitti360_canonical.json'
+
+scene_name: 'all'
+frame_token: 'all'
+
+# Validity mask applied when calling load() (null = return full occupancy).
+mask_key: valid_mask

@@ -1,0 +1,43 @@
+# @package _global_
+optim_wrapper:
+  type: AmpOptimWrapper
+  loss_scale: dynamic
+  optimizer:
+    type: AdamW
+    lr: 2.0e-4
+    weight_decay: 0.01
+    betas:
+      - 0.9
+      - 0.999
+  paramwise_cfg:
+    custom_keys:
+      img_backbone:
+        lr_mult: 0.1
+      sampling_offset:
+        lr_mult: 0.1
+  clip_grad:
+    max_norm: 35
+    norm_type: 2
+
+param_scheduler:
+  - type: LinearLR
+    by_epoch: false
+    start_factor: 0.3333333333333333
+    begin: 0
+    end: 500
+  - type: CosineAnnealingLR
+    by_epoch: true
+    begin: 0
+    end: 20
+    T_max: 20
+    eta_min: 2.0e-7
+    convert_to_iter_based: true
+
+train_cfg:
+  type: EpochBasedTrainLoop
+  max_epochs: 20
+  val_interval: 1
+val_cfg:
+  type: ValLoop
+test_cfg:
+  type: TestLoop

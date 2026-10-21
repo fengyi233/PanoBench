@@ -1,0 +1,76 @@
+# @package _global_
+defaults:
+  - override /hydra/job_logging: disabled
+  - override /hydra/hydra_logging: disabled
+
+default_scope: mmdet3d
+
+custom_imports:
+  imports:
+    - models
+    - loaders
+    - evaluator
+    - utils.logging
+  allow_failed_imports: false
+
+default_hooks:
+  timer:
+    type: IterTimerHook
+  logger:
+    type: LoggerHook
+    interval: 50
+  param_scheduler:
+    type: ParamSchedulerHook
+  checkpoint:
+    type: CheckpointHook
+    interval: 1
+    max_keep_ckpts: 3
+  sampler_seed:
+    type: DistSamplerSeedHook
+
+env_cfg:
+  cudnn_benchmark: true
+  mp_cfg:
+    mp_start_method: fork
+    opencv_num_threads: 0
+  dist_cfg:
+    backend: nccl
+
+log_processor:
+  type: ConciseLogProcessor
+  window_size: 50
+  by_epoch: true
+log_level: INFO
+load_from: null
+resume: false
+work_dir: null
+checkpoint: null
+pred_occ_save_dir: null
+
+vis_backends:
+  - type: LocalVisBackend
+visualizer:
+  type: Det3DLocalVisualizer
+  vis_backends: ${vis_backends}
+  name: visualizer
+
+randomness:
+  seed: 0
+  deterministic: false
+
+hydra:
+  job_logging:
+    version: 1
+    root:
+      level: ERROR
+    disable_existing_loggers: false
+  hydra_logging:
+    version: 1
+    root:
+      level: ERROR
+    disable_existing_loggers: false
+  job:
+    chdir: false
+  run:
+    dir: .
+  output_subdir: null

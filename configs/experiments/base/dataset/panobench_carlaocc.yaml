@@ -1,0 +1,148 @@
+# @package _global_
+data:
+  name: panobench_carlaocc
+  occ_dataset_type: panobench_carlaocc
+  occ_root: data/canonical_occ
+  data_root: data/CarlaOccV1Preprocessed/
+  num_frames: 8
+  view_counts:
+    vs_0.1_forward_view: 1
+    vs_0.2_forward_view: 1
+    vs_0.4_forward_view: 1
+    vs_0.1_surround_view: 6
+    vs_0.2_surround_view: 6
+    vs_0.4_surround_view: 6
+  num_views: ${data.view_counts[${data.occ_variant}]}
+  train_interval: 1
+  test_interval: 1
+  train_bs: 4
+  load_instances: false
+  rare_classes: []
+  cls_weights:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+
+ida_aug_conf:
+  resize_lim:
+    - 1.0
+    - 1.0
+  final_dim:
+    - 192
+    - 640
+  bot_pct_lim:
+    - 0.0
+    - 0.0
+  rot_lim:
+    - 0.0
+    - 0.0
+  H: 192
+  W: 640
+  rand_flip: true
+
+bda_aug_conf:
+  flip_dx_ratio: 0.5
+  flip_dy_ratio: 0.5
+
+train_pipeline:
+  - type: LoadMultiViewImages
+  - type: LoadCanonicalOcc
+    mask_key: valid_mask
+    load_instances: ${data.load_instances}
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: false
+  - type: RandomTransformOcc
+    bda_aug_conf: ${bda_aug_conf}
+  - type: PackInputs
+
+val_pipeline:
+  - type: LoadMultiViewImages
+    test_mode: true
+    online: false
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: true
+  - type: PackInputs
+
+train_dataloader:
+  batch_size: ${data.train_bs}
+  num_workers: 4
+  persistent_workers: true
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: true
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchCarlaOccDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${train_pipeline}
+    test_mode: false
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+
+val_dataloader:
+  batch_size: 1
+  num_workers: 4
+  persistent_workers: false
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: false
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchCarlaOccDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${val_pipeline}
+    test_mode: true
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+
+val_evaluator:
+  metrics:
+    - type: PanoBenchOccMetric
+      dataset_type: ${data.occ_dataset_type}
+      occ_variant: ${data.occ_variant}
+      metrics:
+        - iou
+        - miou
+      use_mask: true
+
+test_dataloader: ${val_dataloader}
+test_evaluator: ${val_evaluator}

@@ -1,0 +1,78 @@
+# @package _global_
+model:
+  type: SparseOcc
+  num_cams: ${data.num_views}
+  img_backbone:
+    _scope_: mmdet
+    type: ResNet
+    depth: 50
+    num_stages: 4
+    out_indices:
+      - 0
+      - 1
+      - 2
+      - 3
+    frozen_stages: 1
+    norm_cfg:
+      type: BN2d
+      requires_grad: true
+    norm_eval: true
+    style: pytorch
+    with_cp: true
+    init_cfg:
+      type: Pretrained
+      checkpoint: pretrain/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth
+      prefix: backbone.
+  img_neck:
+    _scope_: mmdet
+    type: FPN
+    in_channels:
+      - 256
+      - 512
+      - 1024
+      - 2048
+    out_channels: 256
+    num_outs: 4
+  occ_head:
+    type: SparseOccHead
+    dataset_type: ${data.occ_dataset_type}
+    occ_variant: ${data.occ_variant}
+    panoptic: true
+    embed_dims: 256
+    class_weights: ${data.cls_weights}
+    score_threshold: 0.3
+    free_score_threshold: 0.01
+    use_mask: false
+    transformer:
+      type: SparseOccTransformer
+      embed_dims: 256
+      num_layers: 2
+      num_frames: ${data.num_frames}
+      num_views: ${data.num_views}
+      num_points: 4
+      num_groups: 4
+      num_queries: 100
+      num_levels: 4
+      topk_training:
+        - 4000
+        - 16000
+        - 64000
+      topk_testing:
+        - 4000
+        - 16000
+        - 64000
+      max_self_attn_queries: 4096
+      with_mask_decoder: true
+    loss_cfgs:
+      loss_geo_scal:
+        type: GeoScalLoss
+        loss_weight: 1.0
+      loss_sem_scal:
+        type: SemScalLoss
+        loss_weight: 1.0
+      loss_mask2former:
+        type: Mask2FormerLoss
+        no_class_weight: 0.1
+        loss_cls_weight: 2.0
+        loss_mask_weight: 5.0
+        loss_dice_weight: 5.0

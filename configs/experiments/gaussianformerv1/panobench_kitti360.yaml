@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - /experiments/base/runtime: default
+  - /experiments/base/schedule: 20e
+  - /experiments/base/dataset: panobench_kitti360
+  - /experiments/base/model: gaussianformerv1
+  - _self_
+
+data:
+  occ_variant: null
+  # The local_aggregate kernel splats one scene at a time.
+  num_frames: 1
+  train_bs: 1

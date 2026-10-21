@@ -1,0 +1,138 @@
+# @package _global_
+model:
+  type: GaussianFormerV1
+  num_cams: ${data.num_views}
+  img_backbone:
+    _scope_: mmdet
+    type: ResNet
+    depth: 50
+    num_stages: 4
+    out_indices:
+      - 0
+      - 1
+      - 2
+      - 3
+    frozen_stages: 1
+    norm_cfg:
+      type: BN2d
+      requires_grad: true
+    norm_eval: true
+    style: pytorch
+    with_cp: true
+    init_cfg:
+      type: Pretrained
+      checkpoint: pretrain/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth
+      prefix: backbone.
+  img_neck:
+    _scope_: mmdet
+    type: FPN
+    in_channels:
+      - 256
+      - 512
+      - 1024
+      - 2048
+    out_channels: 128
+    num_outs: 4
+    start_level: 1
+    add_extra_convs: on_output
+    relu_before_extra_convs: true
+  lifter:
+    type: GaussianLifter
+    dataset_type: ${data.occ_dataset_type}
+    occ_variant: ${data.occ_variant}
+    num_anchor: 25600
+    embed_dims: 128
+    anchor_grad: true
+    feat_grad: false
+    include_opa: true
+  encoder:
+    type: GaussianOccEncoder
+    dataset_type: ${data.occ_dataset_type}
+    occ_variant: ${data.occ_variant}
+    anchor_encoder:
+      type: SparseGaussian3DEncoder
+      embed_dims: 128
+      include_opa: true
+    norm_layer:
+      type: LN
+      normalized_shape: 128
+    ffn:
+      type: GaussianAsymmetricFFN
+      in_channels: 256
+      embed_dims: 128
+      feedforward_channels: 512
+      num_fcs: 2
+      ffn_drop: 0.1
+      pre_norm:
+        type: LN
+    deformable_model:
+      type: DeformableFeatureAggregation
+      embed_dims: 128
+      num_groups: 4
+      num_levels: 4
+      num_cams: ${data.num_views}
+      attn_drop: 0.15
+      use_camera_embed: true
+      residual_mode: cat
+      kps_generator:
+        type: SparseGaussian3DKeyPointsGenerator
+        num_learnable_pts: 2
+        fix_scale:
+          - [0.0, 0.0, 0.0]
+          - [0.45, 0.0, 0.0]
+          - [-0.45, 0.0, 0.0]
+          - [0.0, 0.45, 0.0]
+          - [0.0, -0.45, 0.0]
+          - [0.0, 0.0, 0.45]
+          - [0.0, 0.0, -0.45]
+        scale_range: [0.08, 0.64]
+    refine_layer:
+      type: SparseGaussian3DRefinementModule
+      embed_dims: 128
+      scale_range: [0.08, 0.64]
+      restrict_xyz: true
+      unit_xyz: [4.0, 4.0, 1.0]
+      refine_manual: [0, 1, 2]
+      include_opa: true
+      semantics_activation: softplus
+    spconv_layer:
+      type: GaussianSparseConv3D
+      in_channels: 128
+      embed_channels: 128
+      use_out_proj: true
+    # 4 decoder blocks; the first one has no spconv because the anchors are
+    # still at their (grid-independent) initial positions.
+    operation_order:
+      - deformable
+      - ffn
+      - norm
+      - refine
+      - spconv
+      - norm
+      - deformable
+      - ffn
+      - norm
+      - refine
+      - spconv
+      - norm
+      - deformable
+      - ffn
+      - norm
+      - refine
+      - spconv
+      - norm
+      - deformable
+      - ffn
+      - norm
+      - refine
+  occ_head:
+    type: GaussianFormerV1Head
+    dataset_type: ${data.occ_dataset_type}
+    occ_variant: ${data.occ_variant}
+    apply_loss_type: random_1
+    scale_multiplier: 3
+    empty_mean: [0.0, 0.0, -1.0]
+    empty_scale: [100.0, 100.0, 8.0]
+    cls_weights: ${data.cls_weights}
+    loss_ce_weight: 10.0
+    loss_lovasz_weight: 1.0

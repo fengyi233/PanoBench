@@ -1,0 +1,8 @@
+# @package _global_
+defaults:
+  - canonical: panobench_kitti360
+  - visualization: default
+  - _self_
+
+visualization:
+  output_dir: outputs/vis_occ_gt

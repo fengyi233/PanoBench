@@ -1,0 +1,134 @@
+# @package _global_
+data:
+  name: panobench_nuscenes_4d
+  occ_dataset_type: panobench_nuscenes
+  occ_root: data/canonical_occ
+  data_root: data/nuscenes/
+  ann_train: pkl_files_panobench/nuscenes_infos_train_sweep.pkl
+  ann_val: pkl_files_panobench/nuscenes_infos_val_sweep.pkl
+  num_frames: 8
+  num_views: 6
+  train_interval: 1
+  test_interval: 1
+  # Matches the official SparseWorld-TC config; ~17 GiB peak with AMP.
+  train_bs: 2
+  # Horizon offsets in key frames. NuScenes key frames are 2 Hz, so
+  # [0, 2, 4, 6] is the current frame plus 1s / 2s / 3s ahead.
+  future_frames:
+    - 0
+    - 2
+    - 4
+    - 6
+  step_seconds: 0.5
+  cls_weights:
+    - 1
+    - 5
+    - 10
+    - 5
+    - 5
+    - 10
+    - 10
+    - 5
+    - 10
+    - 5
+    - 5
+    - 1
+    - 5
+    - 1
+    - 1
+    - 2
+    - 1
+
+ida_aug_conf:
+  resize_lim:
+    - 0.38
+    - 0.55
+  final_dim:
+    - 256
+    - 704
+  bot_pct_lim:
+    - 0.0
+    - 0.0
+  rot_lim:
+    - 0.0
+    - 0.0
+  H: 900
+  W: 1600
+  rand_flip: true
+
+# No RandomTransformOcc here: BDA post-multiplies occ2img, which would break the
+# fut2cur composition that maps each horizon back to the key-frame occupancy.
+train_pipeline:
+  - type: LoadMultiViewImages
+  - type: LoadCanonicalOcc4D
+    mask_key: valid_mask
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: false
+  - type: PackInputs
+
+val_pipeline:
+  - type: LoadMultiViewImages
+    test_mode: true
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: true
+  - type: PackInputs
+
+train_dataloader:
+  batch_size: ${data.train_bs}
+  num_workers: 4
+  persistent_workers: true
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: true
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchNuScenes4DDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${train_pipeline}
+    ann_file: ${data.ann_train}
+    test_mode: false
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+    future_frames: ${data.future_frames}
+
+val_dataloader:
+  batch_size: 1
+  num_workers: 4
+  persistent_workers: false
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: false
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchNuScenes4DDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${val_pipeline}
+    ann_file: ${data.ann_val}
+    test_mode: true
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+    future_frames: ${data.future_frames}
+
+val_evaluator:
+  metrics:
+    - type: PanoBenchOcc4DMetric
+      dataset_type: ${data.occ_dataset_type}
+      occ_variant: ${data.occ_variant}
+      future_frames: ${data.future_frames}
+      step_seconds: ${data.step_seconds}
+      use_mask: true
+
+test_dataloader: ${val_dataloader}
+test_evaluator: ${val_evaluator}

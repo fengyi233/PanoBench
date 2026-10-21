@@ -1,32 +1,50 @@
-# Local data, checkpoints, and outputs
-/data/
-/pretrain/
-/checkpoints/
-/outputs/
-/work_dirs/
-/runs/
-/wandb/
-/external/
+# Python and packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.so
+*.whl
+.venv/
+venv/
+
+# Local data, pretrained weights and experiment outputs
+/data
+/downloads
+/reference
+/pretrain
+/checkpoints
+/outputs
+/prediction
+/submission
+/visualizations
+/work_dirs
+wandb/
+runs/
+events.out.tfevents.*
 *.pth
 *.pt
 *.ckpt
 *.safetensors
+*.log
+/.hydra/
 
-# Python and compiled extensions
-__pycache__/
-*.py[cod]
-*.so
-*.egg-info/
-/build/
-/dist/
-.venv/
-venv/
+# Local checks and caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 
-# Credentials and local settings
+# Editor and operating-system files
+.idea/
+.vscode/
+.cursor/
+.DS_Store
+Thumbs.db
+
+# Local credentials
 .env
 .env.*
 !.env.example
-.idea/
-.vscode/
-.DS_Store
-*.log

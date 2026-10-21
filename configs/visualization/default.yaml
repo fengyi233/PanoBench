@@ -1,0 +1,7 @@
+interactive: false
+show_axis: false
+
+# Render only every N-th frame within each scene (1 = every frame).
+vis_interval: 10
+
+output_dir: outputs/vis_occ_gt

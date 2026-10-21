@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - /experiments/base/runtime: default
+  - /experiments/base/schedule: 20e
+  - /experiments/base/dataset: panobench_nuscenes
+  - /experiments/base/model: opusv1
+  - _self_
+
+data:
+  occ_variant: ???
+

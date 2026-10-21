@@ -1,0 +1,135 @@
+# @package _global_
+data:
+  name: panobench_nuscenes
+  occ_dataset_type: panobench_nuscenes
+  occ_root: data/canonical_occ
+  data_root: data/nuscenes/
+  ann_train: pkl_files_panobench/nuscenes_infos_train_sweep.pkl
+  ann_val: pkl_files_panobench/nuscenes_infos_val_sweep.pkl
+  num_frames: 8
+  num_views: 6
+  train_interval: 1
+  test_interval: 1
+  train_bs: 2
+  load_instances: false
+  # Official OPUS rares on PanoBench ids: bicycle / construction_vehicle / traffic_cone.
+  rare_classes:
+    - 2
+    - 5
+    - 8
+  cls_weights:
+    - 1
+    - 5
+    - 10
+    - 5
+    - 5
+    - 10
+    - 10
+    - 5
+    - 10
+    - 5
+    - 5
+    - 1
+    - 5
+    - 1
+    - 1
+    - 2
+    - 1
+
+ida_aug_conf:
+  resize_lim:
+    - 0.38
+    - 0.55
+  final_dim:
+    - 256
+    - 704
+  bot_pct_lim:
+    - 0.0
+    - 0.0
+  rot_lim:
+    - 0.0
+    - 0.0
+  H: 900
+  W: 1600
+  rand_flip: true
+
+bda_aug_conf:
+  flip_dx_ratio: 0.5
+  flip_dy_ratio: 0.5
+
+train_pipeline:
+  - type: LoadMultiViewImages
+  - type: LoadCanonicalOcc
+    mask_key: valid_mask
+    load_instances: ${data.load_instances}
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: false
+  - type: RandomTransformOcc
+    bda_aug_conf: ${bda_aug_conf}
+  - type: PackInputs
+
+val_pipeline:
+  - type: LoadMultiViewImages
+    test_mode: true
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: true
+  - type: PackInputs
+
+train_dataloader:
+  batch_size: ${data.train_bs}
+  num_workers: 4
+  persistent_workers: true
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: true
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchNuScenesDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${train_pipeline}
+    ann_file: ${data.ann_train}
+    test_mode: false
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+
+val_dataloader:
+  batch_size: 1
+  num_workers: 4
+  persistent_workers: false
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: false
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchNuScenesDataset
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${val_pipeline}
+    ann_file: ${data.ann_val}
+    test_mode: true
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+
+val_evaluator:
+  metrics:
+    - type: PanoBenchOccMetric
+      dataset_type: ${data.occ_dataset_type}
+      occ_variant: ${data.occ_variant}
+      metrics:
+        - iou
+        - miou
+      use_mask: true
+
+test_dataloader: ${val_dataloader}
+test_evaluator: ${val_evaluator}

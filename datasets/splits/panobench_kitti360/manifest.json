@@ -1,0 +1,12 @@
+{
+  "label_frames": 64418,
+  "path_format": "scene/frame.npz relative to panobench_kitti360 label directory",
+  "splits": {
+    "train": {
+      "frames": 51254
+    },
+    "val": {
+      "frames": 13164
+    }
+  }
+}

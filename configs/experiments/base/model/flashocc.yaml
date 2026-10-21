@@ -1,0 +1,69 @@
+# @package _global_
+model:
+  type: FlashOCC
+  dataset_type: ${data.occ_dataset_type}
+  occ_variant: ${data.occ_variant}
+  num_cams: ${data.num_views}
+  img_backbone:
+    _scope_: mmdet
+    type: ResNet
+    depth: 50
+    num_stages: 4
+    out_indices:
+      - 2
+      - 3
+    frozen_stages: -1
+    norm_cfg:
+      type: BN2d
+      requires_grad: true
+    norm_eval: false
+    style: pytorch
+    with_cp: true
+    init_cfg:
+      type: Pretrained
+      checkpoint: pretrain/resnet50-0676ba61.pth
+  img_neck:
+    type: FlashCustomFPN
+    in_channels:
+      - 1024
+      - 2048
+    out_channels: 256
+    num_outs: 1
+    start_level: 0
+  img_view_transformer:
+    type: Occ2ImgViewTransformer
+    input_size: ${ida_aug_conf.final_dim}
+    depth:
+      - 1.0
+      - 45.0
+      - 0.5
+    downsample: 16
+    in_channels: 256
+    out_channels: 80
+  img_bev_encoder_backbone:
+    type: FlashCustomResNet
+    numC_input: 80
+    num_channels:
+      - 160
+      - 320
+      - 640
+  img_bev_encoder_neck:
+    type: FlashFPNLSS
+    in_channels: 800
+    out_channels: 256
+  occ_head:
+    type: FlashOCCHead2D
+    in_dim: 256
+    out_dim: 256
+    use_predicter: true
+    use_mask: true
+    cls_weights: ${data.cls_weights}
+    loss_weight: 1.0
+    loss_geo_weight: 1.0
+    loss_sem_weight: 1.0
+  panoptic_head:
+    type: FlashOCCPanopticHead
+    in_dim: 256
+    hidden_dim: 128
+    center_loss_weight: 1.0
+    offset_loss_weight: 1.0

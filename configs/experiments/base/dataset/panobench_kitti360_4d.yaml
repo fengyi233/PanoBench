@@ -1,0 +1,138 @@
+# @package _global_
+data:
+  name: panobench_kitti360_4d
+  occ_dataset_type: panobench_kitti360
+  occ_root: data/canonical_occ
+  data_root: data/KITTI-360/
+  train_manifest: datasets/splits/panobench_kitti360/train.txt
+  val_manifest: datasets/splits/panobench_kitti360/val.txt
+  num_frames: 8
+  num_views: 1
+  train_interval: 1
+  test_interval: 1
+  train_bs: 2
+  load_instances: false
+  # KITTI-360 images are 10 Hz, so [0, 10, 20, 30] is 0/1/2/3 s.
+  future_frames:
+    - 0
+    - 10
+    - 20
+    - 30
+  step_seconds: 0.1
+  cls_weights:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+
+# Match ViPOcc / preprocessed ``image_00/data_192x640`` (H=192, W=640).
+ida_aug_conf:
+  resize_lim:
+    - 1.0
+    - 1.0
+  final_dim:
+    - 192
+    - 640
+  bot_pct_lim:
+    - 0.0
+    - 0.0
+  rot_lim:
+    - 0.0
+    - 0.0
+  H: 192
+  W: 640
+  rand_flip: true
+
+# No RandomTransformOcc: BDA post-multiplies occ2img and would break fut2cur.
+train_pipeline:
+  - type: LoadMultiViewImages
+    num_cams: ${data.num_views}
+  - type: LoadCanonicalOcc4D
+    mask_key: valid_mask
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: false
+  - type: PackInputs
+
+val_pipeline:
+  - type: LoadMultiViewImages
+    test_mode: true
+    online: false
+    num_cams: ${data.num_views}
+  - type: RandomTransformImage
+    ida_aug_conf: ${ida_aug_conf}
+    test_mode: true
+  - type: PackInputs
+
+train_dataloader:
+  batch_size: ${data.train_bs}
+  num_workers: 4
+  persistent_workers: true
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: true
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchKITTI3604DDataset
+    frame_manifest: ${data.train_manifest}
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${train_pipeline}
+    test_mode: false
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+    future_frames: ${data.future_frames}
+
+val_dataloader:
+  batch_size: 1
+  num_workers: 4
+  persistent_workers: false
+  pin_memory: true
+  sampler:
+    type: DefaultSampler
+    shuffle: false
+  collate_fn:
+    type: default_collate
+  dataset:
+    type: PanoBenchKITTI3604DDataset
+    frame_manifest: ${data.val_manifest}
+    data_root: ${data.data_root}
+    occ_gt_root: ${data.occ_root}
+    occ_variant: ${data.occ_variant}
+    pipeline: ${val_pipeline}
+    test_mode: true
+    num_frames: ${data.num_frames}
+    train_interval: ${data.train_interval}
+    test_interval: ${data.test_interval}
+    future_frames: ${data.future_frames}
+
+val_evaluator:
+  metrics:
+    - type: PanoBenchOcc4DMetric
+      dataset_type: ${data.occ_dataset_type}
+      occ_variant: ${data.occ_variant}
+      future_frames: ${data.future_frames}
+      step_seconds: ${data.step_seconds}
+      use_mask: true
+
+test_dataloader: ${val_dataloader}
+test_evaluator: ${val_evaluator}

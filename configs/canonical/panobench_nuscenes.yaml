@@ -1,0 +1,9 @@
+type: panobench_nuscenes
+variant: vs_0.4
+path: data/canonical_occ
+
+mappings: 'datasets/mappings/panobench_nuscenes.json'
+
+scene_name: 'all'
+frame_token: 'all'
+mask_key: valid_mask

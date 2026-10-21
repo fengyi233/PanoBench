@@ -1,0 +1,6 @@
+type: panobench_carlaocc
+variant: vs_0.4_surround_view
+path: data/canonical_occ
+scene_name: 'all'
+frame_token: 'all'
+mask_key: valid_mask

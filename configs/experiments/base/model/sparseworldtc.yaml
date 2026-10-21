@@ -1,0 +1,77 @@
+# @package _global_
+model:
+  type: SparseWorldTC
+  num_cams: ${data.num_views}
+  img_backbone:
+    _scope_: mmdet
+    type: ResNet
+    depth: 50
+    num_stages: 4
+    out_indices:
+      - 0
+      - 1
+      - 2
+      - 3
+    frozen_stages: 1
+    norm_cfg:
+      type: BN2d
+      requires_grad: true
+    norm_eval: true
+    style: pytorch
+    with_cp: true
+    init_cfg:
+      type: Pretrained
+      checkpoint: pretrain/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth
+      prefix: backbone.
+  img_neck:
+    _scope_: mmdet
+    type: FPN
+    in_channels:
+      - 256
+      - 512
+      - 1024
+      - 2048
+    out_channels: 256
+    num_outs: 4
+  occ_head:
+    type: SparseWorldTCHead
+    dataset_type: ${data.occ_dataset_type}
+    occ_variant: ${data.occ_variant}
+    in_channels: 256
+    num_query: 600
+    future_frames: ${data.future_frames}
+    transformer:
+      type: SparseWorldTCTransformer
+      embed_dims: 256
+      num_frames: ${data.num_frames}
+      num_views: ${data.num_views}
+      num_points: 4
+      num_layers: 6
+      num_levels: 4
+      num_refines:
+        - 1
+        - 4
+        - 16
+        - 32
+        - 64
+        - 128
+      scales:
+        - 0.5
+    loss_cls:
+      _scope_: mmdet
+      type: FocalLoss
+      use_sigmoid: true
+      gamma: 2.0
+      alpha: 0.25
+      loss_weight: 2.0
+    loss_pts:
+      _scope_: mmdet
+      type: SmoothL1Loss
+      beta: 0.2
+      loss_weight: 0.5
+    train_cfg:
+      cls_weights: ${data.cls_weights}
+      max_gt_points: 200000
+    test_cfg:
+      score_thr: 0.5
+      padding: true
